@@ -40,18 +40,32 @@ Mat FillHoles(const Mat &src)
 {
     //assume input is uint8 B & W (0 or 1)
     //this function imitates imfill(image,'hole')
-    Mat src1 = src.clone();
+    // Mat src1 = src.clone();
 
-    Mat dst = Mat::zeros(src.rows, src.cols, CV_8UC1);
+    // Mat dst = Mat::zeros(src.rows, src.cols, CV_8UC1);
 
-    std::vector<std::vector<Point> > contours;
-    std::vector<Vec4i> hierarchy;
+    // std::vector<std::vector<Point> > contours;
+    // std::vector<Vec4i> hierarchy;
 
-    findContours(src1, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+    // findContours(src1, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
 
-    drawContours(dst, contours, 0, Scalar::all(255), FILLED);
+    // drawContours(dst, contours, 0, Scalar::all(255), FILLED);
 
-    return dst;
+    // return dst;
+
+    Mat filledImage = src.clone();
+
+    // 找到图像中的所有轮廓
+    vector<vector<Point>> contours;
+    vector<Vec4i> hierarchy;
+    findContours(filledImage, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+
+    // 对于每个轮廓，填充为白色
+    for (size_t i = 0; i < contours.size(); i++) {
+        drawContours(filledImage, contours, static_cast<int>(i), Scalar::all(255), FILLED, 8, hierarchy);
+    }
+
+    return filledImage;
 }
 
 Mat FindBoundaries(Mat src)
@@ -88,6 +102,7 @@ void findSeamAndBlend(int stable, int start, int end, int ab, float scale)
     sprintf(filename, "%s/A%d.jpg", srcFolder, start);
     A1 = imread(filename);
     resize(A1, A1s, Size(), scale, scale);
+    // 将边缘存储在e中
     getEdgeMap(50, A1s, A1e);
     sprintf(filename, "%s/B%d.jpg", srcFolder, start);
     B1 = imread(filename);
@@ -102,6 +117,8 @@ void findSeamAndBlend(int stable, int start, int end, int ab, float scale)
 
     A1sMask = FillHoles(A1sMasktmp);
     B1sMask = FillHoles(B1sMasktmp);
+    // A1sMask = A1sMasktmp;
+    // B1sMask = B1sMasktmp;
 
     int width = (int)A1s.cols;
     int height = (int)A1s.rows;
@@ -143,19 +160,22 @@ void findSeamAndBlend(int stable, int start, int end, int ab, float scale)
 
         A1sMask = FillHoles(A1sMasktmp);
         B1sMask = FillHoles(B1sMasktmp);
+        // A1sMask = A1sMasktmp;
+        // B1sMask = B1sMasktmp;
 
         Mat imgAll = Mat::zeros(A0sMask.size(), CV_8UC1);
         bitwise_or(A0sMask, B0sMask, imgAll);
 
-        //imwrite("D:/test.jpg", imgAll);
+        // sprintf(filename, "%s/test_%d.jpg", trgFolder, frameIndex);
+        // imwrite(filename, imgAll);
 
         edge0 = A0e + B0e;
         edge1 = A1e + B1e;
 
-        //sprintf_s(filename, "%s/edge0.jpg", tmpFolder);
-        //imwrite(filename, edge0);
-        //sprintf_s(filename, "%s/edge1.jpg", tmpFolder);
-        //imwrite(filename, edge1);
+        // sprintf_s(filename, "%s/edge0_%d.jpg", tmpFolder, frameIndex);
+        // imwrite(filename, edge0);
+        // sprintf_s(filename, "%s/edge1_%d.jpg", tmpFolder, frameIndex + 1);
+        // imwrite(filename, edge1);
 
         Mat graphcut;
         Mat halfA, halfB;
@@ -261,6 +281,13 @@ void findSeamAndBlend(int stable, int start, int end, int ab, float scale)
         }
         int flow = g.maxflow();
         std::cout << frameIndex << "\tmax flow: " << flow << endl;
+        // if (flow < 8000) {
+        //     sprintf(filename, "%s/%d.jpg", srcFolder, frameIndex + 1);
+        //     Mat res = imread(filename);
+        //     sprintf(filename, "%s/D%d.jpg", trgFolder, frameIndex + 1);
+        //     imwrite(filename, res);
+        //     continue;
+        // }
 
         graphcut = A0.clone();
         halfA = A0.clone();
@@ -306,16 +333,18 @@ void findSeamAndBlend(int stable, int start, int end, int ab, float scale)
                             }
                 }
             }
-            //sprintf(filename, "%s/C%d.jpg", trgFolder, frameIndex);
-            //imwrite(filename, graphcut);
-            sprintf(filename, "%s/C%dA.jpg", trgFolder, frameIndex);
-            imwrite(filename, halfA);
-            sprintf(filename, "%s/C%dB.jpg", trgFolder, frameIndex);
-            imwrite(filename, halfB);
-            /*sprintf(filename, "../C%dA_m.jpg", frameIndex);
-            imwrite(filename, halfA_mask);
-            sprintf(filename, "../C%dB_m.jpg", frameIndex);
-            imwrite(filename, halfB_mask);*/
+            // sprintf(filename, "%s/C%d.jpg", trgFolder, frameIndex);
+            // imwrite(filename, graphcut);
+            // sprintf(filename, "%s/C%dA.jpg", trgFolder, frameIndex);
+            // imwrite(filename, halfA);
+            // sprintf(filename, "%s/C%dB.jpg", trgFolder, frameIndex);
+            // imwrite(filename, halfB);
+
+            // sprintf(filename, "../C%dA_m.jpg", frameIndex);
+            // imwrite(filename, halfA_mask);
+            // sprintf(filename, "../C%dB_m.jpg", frameIndex);
+            // imwrite(filename, halfB_mask);
+
             Ptr<detail::Blender> blender;
             blender = detail::Blender::createDefault(detail::Blender::MULTI_BAND, true);
             detail::MultiBandBlender *mb = dynamic_cast<detail::MultiBandBlender *>(blender.get());
@@ -361,19 +390,19 @@ void findSeamAndBlend(int stable, int start, int end, int ab, float scale)
                 }
             }
         }
-        //sprintf(filename, "%s/mask%d.jpg", trgFolder, frameIndex);
-        //imwrite(filename, saveMask);
+        // sprintf(filename, "%s/mask%d.jpg", trgFolder, frameIndex);
+        // imwrite(filename, saveMask);
 
-        //sprintf(filename, "%s/C%d.jpg", trgFolder, frameIndex + 1);
-        //imwrite(filename, graphcut);
+        // sprintf(filename, "%s/C%d.jpg", trgFolder, frameIndex + 1);
+        // imwrite(filename, graphcut);
         sprintf(filename, "%s/C%dA.jpg", trgFolder, frameIndex + 1);
         imwrite(filename, halfA);
         sprintf(filename, "%s/C%dB.jpg", trgFolder, frameIndex + 1);
         imwrite(filename, halfB);
-        //sprintf(filename, "../C%dA_m.jpg", frameIndex + 1);
-        //imwrite(filename, halfA_mask);
-        //sprintf(filename, "../C%dB_m.jpg", frameIndex + 1);
-        //imwrite(filename, halfB_mask);
+        // sprintf(filename, "C%dA_m.jpg", frameIndex + 1);
+        // imwrite(filename, halfA_mask);
+        // sprintf(filename, "C%dB_m.jpg", frameIndex + 1);
+        // imwrite(filename, halfB_mask);
         Ptr<detail::Blender> blender;
         blender = detail::Blender::createDefault(detail::Blender::MULTI_BAND, true);
         detail::MultiBandBlender *mb = dynamic_cast<detail::MultiBandBlender *>(blender.get());
