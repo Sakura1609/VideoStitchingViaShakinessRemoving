@@ -1,4 +1,4 @@
-video = VideoReader('./case17-l.mp4');
+video = VideoReader('src/case17-l.mp4');
 if ~exist('left', 'dir')
     mkdir('left');
 end
@@ -9,7 +9,8 @@ while hasFrame(video)
     filename = ['./left/' sprintf('%03d',k) '.jpg'];
     imwrite(frame, filename);
 end
-video = VideoReader('./case17-r.mp4');
+
+video = VideoReader('src/case17-r.mp4');
 if ~exist('right', 'dir')
     mkdir('right');
 end
