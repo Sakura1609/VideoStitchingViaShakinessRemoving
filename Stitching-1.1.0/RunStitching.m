@@ -33,7 +33,7 @@ Stitchness = 20;                     % adjust the weight of stitching term, 10 -
 SKIP_BACKGROUND_SEGMENTATION = true; % skip the background segmentation - treat all tracks as background.
 RANSAC = true;                       % use RANSAC to remove wrong sparse correspondences, set to true if overlap is small and stitch fails. 
 % ---------------
-OutputPadding = 500; % the padding around the video
+OutputPadding = 1000; % the padding around the video
 OutputPath = 'res_demo'; % the directory to store the output frames, auto create it if not exist
 
 %% intermediate output control
