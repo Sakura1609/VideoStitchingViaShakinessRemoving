@@ -103,7 +103,7 @@ classdef VideoStitch2 < handle
             obj.quadHeight = obj.videoHeight / obj.meshSize;
             obj.quadWidth = obj.videoWidth / obj.meshSize;
 
-            for frameIndex = 1:obj.nFrames
+            for frameIndex = 5:obj.nFrames
                 pa = squeeze(obj.CP(frameIndex, 1:obj.ppf(frameIndex), 1:2));
                 pb = squeeze(obj.CP(frameIndex, 1:obj.ppf(frameIndex), 3:4));
 
@@ -141,7 +141,7 @@ classdef VideoStitch2 < handle
         function [Pa_inv, Pb_inv] = inverse(obj, Pa, Pb)
             Pa_inv = zeros(size(Pa));
             Pb_inv = zeros(size(Pb));
-            for frameIndex = 1:obj.nFrames
+            for frameIndex = 5:obj.nFrames
                 for i = 1:obj.meshSize
                     for j = 1:obj.meshSize
                         Pa_inv(frameIndex, i, j, :, :) = squeeze(Pa(frameIndex, i, j, :, :))^(-1);
@@ -154,7 +154,7 @@ classdef VideoStitch2 < handle
         function [PaCorner, PbCorner] = PxCorner(obj, Pa_inv, Pb_inv)
             PaCorner = ones(obj.nFrames, obj.meshSize, obj.meshSize, 4, 3);
             PbCorner = ones(obj.nFrames, obj.meshSize, obj.meshSize, 4, 3);
-            for frameIndex = 1:obj.nFrames
+            for frameIndex = 5:obj.nFrames
                 for i = 1:obj.meshSize
                     for j = 1:obj.meshSize
                         [PaCorner(frameIndex, i, j, 1, 1), PaCorner(frameIndex, i, j, 1, 2)]...
@@ -181,7 +181,7 @@ classdef VideoStitch2 < handle
         function init(obj)
             obj.Pa = obj.Ca;
             obj.Pb = obj.Cb;
-            for frameIndex = 1:obj.nFrames
+            for frameIndex = 5:obj.nFrames
                 for k = 1:obj.ppf(frameIndex)
                     obj.validCP(frameIndex, k) = 1;
                 end
@@ -195,7 +195,7 @@ classdef VideoStitch2 < handle
         function updateOffset(obj)
             B = zeros(obj.nFrames, 3, 3);
             ms = obj.meshSize;
-            for frameIndex = 1:obj.nFrames
+            for frameIndex = 5:obj.nFrames
                 for row = 1:ms
                     for col = 1:ms
                         B1 = squeeze(obj.Pa(frameIndex, row, col, :, :)) / squeeze(obj.Ca(frameIndex, row, col, :, :));
@@ -308,6 +308,11 @@ classdef VideoStitch2 < handle
         end
 
         function optPath(obj, maxIte, secondPhase)
+            % CoreNum=22; %设定机器CPU核心数量
+            % if isempty(gcp('nocreate')) %如果并行未开启
+            %     parpool(CoreNum);
+            % end
+
             % zero round
             firstround = maxIte - secondPhase;
             % parameters
@@ -329,7 +334,7 @@ classdef VideoStitch2 < handle
                         asaplambda = asap_1;
                     end
                     tic;
-                    parfor frameIndex = 1:obj.nFrames
+                    parfor frameIndex = 5:obj.nFrames
                         CPcount = 0;
                         PAa = zeros(obj.ppf(frameIndex), 2);
                         PBa = zeros(obj.ppf(frameIndex), 2);
@@ -373,7 +378,7 @@ classdef VideoStitch2 < handle
                     fprintf('.');
                     oPa = obj.Pa;
                     oPb = obj.Pb;
-                    for frameIndex = 1:obj.nFrames
+                    for frameIndex = 5:obj.nFrames
                         stitching = obj.stitchness;
                         % fix the head and tail
                         crop_fix = 0;
@@ -486,7 +491,7 @@ classdef VideoStitch2 < handle
         function updateCP(obj)
             % set validCp and ppf according to H
             obj.ppf = zeros(obj.nFrames, 1);
-            for frameIndex = 1:obj.nFrames
+            for frameIndex = 5:obj.nFrames
                 d = zeros(obj.maxppf, 1);
                 for k = 1:obj.maxppf
                     if obj.validCP(frameIndex, k) == 0
@@ -534,7 +539,7 @@ classdef VideoStitch2 < handle
             fprintf('\nNumber of Valid Control Points :%5d\n', obj.nCP);
             fprintf('\nAverage Alignment Error :%.2f\n', mean(obj.CPthreshold - 10) / 2);
             obj.nCPgrid = zeros(obj.nFrames, obj.meshSize, obj.meshSize, 2);
-            for frameIndex = 1:obj.nFrames
+            for frameIndex = 5:obj.nFrames
                 for k = 1:obj.maxppf
                     if obj.validCP(frameIndex, k) ==1
                         pb = obj.CP(frameIndex, k, 3:4);
@@ -558,7 +563,7 @@ classdef VideoStitch2 < handle
             end
             obj.gap = gap;
             obj.updateOffset();
-            parfor frameIndex = 1 : obj.nFrames %parfor
+            parfor frameIndex = 5 : obj.nFrames %parfor
                 disp(['rendering: # ' int2str(frameIndex)]);
                 fileListA = dir(obj.seqA);
                 fileListA = fileListA(3:length(fileListA));
@@ -598,7 +603,7 @@ classdef VideoStitch2 < handle
             end
             obj.gap = gap;
             obj.updateOffset();
-            parfor frameIndex = 1:obj.nFrames %parfor
+            parfor frameIndex = 5:obj.nFrames %parfor
                 disp(['rendering: # ' int2str(frameIndex)]);
                 fileListA = dir(obj.seqA);
                 fileListA = fileListA(3:length(fileListA));
@@ -663,7 +668,7 @@ classdef VideoStitch2 < handle
                 mkdir(outPathB);
             end
             width = 2;
-            for frameIndex = 1:obj.nFrames %parfor
+            for frameIndex = 5:obj.nFrames %parfor
                 disp(['rendering: # ' int2str(frameIndex)]);
 
                 fileListA = dir(obj.seqA);
@@ -978,46 +983,81 @@ classdef VideoStitch2 < handle
 
         function calcOmega(obj)
 %             disp('computing omega...')
-            for i = 1:obj.meshSize
-                for j = 1:obj.meshSize
-                    for t = 1:obj.nFrames
-                        for r = t-obj.span:t+obj.span
-%                             if t > obj.span && t <= obj.nFrames - obj.span
-                            if r > 0 && r <= obj.nFrames
-                                dPa = abs(obj.Ca(t,i,j,1,3) - obj.Ca(r,i,j,1,3)) + abs(obj.Ca(t,i,j,2,3) - obj.Ca(r,i,j,2,3));
-                                dPb = abs(obj.Cb(t,i,j,1,3) - obj.Cb(r,i,j,1,3)) + abs(obj.Cb(t,i,j,2,3) - obj.Cb(r,i,j,2,3));
-                                obj.w_a(t,r,i,j) = gaussmf(abs(t-r), [10 0]) * gaussmf(dPa, [400 0]);
-                                obj.w_a(t,t,i,j) = 0;
-                                obj.w_b(t,r,i,j) = gaussmf(abs(t-r), [10 0]) * gaussmf(dPb, [400 0]);
-                                obj.w_b(t,t,i,j) = 0;
-                            end
-                        end
-                        obj.gamma_a(t,i,j) = sum(obj.w_a(t,:,i,j)) * 2 * obj.smoothness;
-                        obj.gamma_b(t,i,j) = sum(obj.w_b(t,:,i,j)) * 2 * obj.smoothness;
-                        obj.gamma_a(t,i,j) = obj.gamma_a(t,i,j) + 1;
-                        obj.gamma_b(t,i,j) = obj.gamma_b(t,i,j) + 1;
-                        if (1 == obj.meshSize) || obj.stableW == 0
-                            continue;
-                        end
-                        if ((i==1)||(i==obj.meshSize))&&((j==1)||(j==obj.meshSize))
-                            obj.gamma_a(t,i,j) = obj.gamma_a(t,i,j) + 2 * 3 * obj.stableW;
-                            obj.gamma_b(t,i,j) = obj.gamma_b(t,i,j) + 2 * 3 * obj.stableW;
-                        end
-                        if ((i==1)||(i==obj.meshSize))&&((j>1)&&(j<obj.meshSize))
-                            obj.gamma_a(t,i,j) = obj.gamma_a(t,i,j) + 2 * 5 * obj.stableW;
-                            obj.gamma_b(t,i,j) = obj.gamma_b(t,i,j) + 2 * 5 * obj.stableW;
-                        end
-                        if ((i>1)&&(i<obj.meshSize))&&((j==1)||(j==obj.meshSize))
-                            obj.gamma_a(t,i,j) = obj.gamma_a(t,i,j) + 2 * 5 * obj.stableW;
-                            obj.gamma_b(t,i,j) = obj.gamma_b(t,i,j) + 2 * 5 * obj.stableW;
-                        end
-                        if ((i>1)&&(i<obj.meshSize))&&((j>1)&&(j<obj.meshSize))
-                            obj.gamma_a(t,i,j) = obj.gamma_a(t,i,j) + 2 * 8 * obj.stableW;
-                            obj.gamma_b(t,i,j) = obj.gamma_b(t,i,j) + 2 * 8 * obj.stableW;
-                        end
-                    end
-                end
+            nFrames = obj.nFrames;
+            r_min = 5;
+            meshSize = obj.meshSize;
+            I = 2:1:meshSize; J = 2:1:meshSize;
+            for t = 5 : nFrames
+                R = t-obj.span:1:t+obj.span;
+                R(R < r_min)=[];
+                R(R > nFrames)=[];%生成所需要的时隙帧
+                R_frame = repmat(R.',1, meshSize, meshSize);
+                dPa = abs(obj.Ca(t,:,:,1,3) - obj.Ca(R,:,:,1,3)) + abs(obj.Ca(t,:,:,2,3) - obj.Ca(R,:,:,2,3));
+                dPb = abs(obj.Cb(t,:,:,1,3) - obj.Cb(R,:,:,1,3)) + abs(obj.Cb(t,:,:,2,3) - obj.Cb(R,:,:,2,3));
+                obj.w_a(t,R,:,:) = gaussmf(abs(t-R_frame), [10 0]) .* gaussmf(dPa, [400 0]);
+                obj.w_a(t,R,:,:) = zeros(length(R), obj.meshSize, obj.meshSize);
+                obj.w_b(t,R,:,:) = gaussmf(abs(t-R_frame), [10 0]) .* gaussmf(dPb, [400 0]);
+                obj.w_b(t,R,:,:) = zeros(length(R), obj.meshSize, obj.meshSize);
+
+                obj.gamma_a(t,:,:) = sum(obj.w_a(t,:,:,:),2) * 2 * obj.smoothness;
+                obj.gamma_b(t,:,:) = sum(obj.w_b(t,:,:,:),2) * 2 * obj.smoothness;
+
+                Cor = [1, meshSize];
+                Con = 2:meshSize;
+                obj.gamma_a(t, Cor, Cor) = obj.gamma_a(t, Cor, Cor) + 2 * 3 * obj.stableW;
+                obj.gamma_a(t, Cor, Con) = obj.gamma_a(t, Cor, Con) + 2 * 5 * obj.stableW;
+                obj.gamma_a(t, Con, Cor) = obj.gamma_a(t, Con, Cor) + 2 * 5 * obj.stableW;
+                obj.gamma_a(t, Con, Con) = obj.gamma_a(t, Con, Con) + 2 * 8 * obj.stableW;
+                
+                obj.gamma_b(t, Cor, Cor) = obj.gamma_b(t, Cor, Cor) + 2 * 3 * obj.stableW;
+                obj.gamma_b(t, Cor, Con) = obj.gamma_b(t, Cor, Con) + 2 * 5 * obj.stableW;
+                obj.gamma_b(t, Con, Cor) = obj.gamma_b(t, Con, Cor) + 2 * 5 * obj.stableW;
+                obj.gamma_b(t, Con, Con) = obj.gamma_b(t, Con, Con) + 2 * 8 * obj.stableW;
             end
+            
+            % for i = 1:obj.meshSize
+                % for j = 1:obj.meshSize
+                    % for t = 5:obj.nFrames
+                        % for r = t-obj.span:t+obj.span
+                            % -if t > obj.span && t <= obj.nFrames - obj.span
+                            % if r >= 5 && r <= obj.nFrames
+                            %     dPa = abs(obj.Ca(t,i,j,1,3) - obj.Ca(r,i,j,1,3)) + abs(obj.Ca(t,i,j,2,3) - obj.Ca(r,i,j,2,3));
+                            %     dPb = abs(obj.Cb(t,i,j,1,3) - obj.Cb(r,i,j,1,3)) + abs(obj.Cb(t,i,j,2,3) - obj.Cb(r,i,j,2,3));
+                            %     obj.w_a(t,r,i,j) = gaussmf(abs(t-r), [10 0]) * gaussmf(dPa, [400 0]);
+                            %     obj.w_a(t,t,i,j) = 0;
+                            %     obj.w_b(t,r,i,j) = gaussmf(abs(t-r), [10 0]) * gaussmf(dPb, [400 0]);
+                            %     obj.w_b(t,t,i,j) = 0;
+                            % end
+
+                            % 计算所有可能的组合的 t 和 r
+                        % end
+
+                        % obj.gamma_a(t,i,j) = sum(obj.w_a(t,:,i,j)) * 2 * obj.smoothness + 1;
+                        % obj.gamma_b(t,i,j) = sum(obj.w_b(t,:,i,j)) * 2 * obj.smoothness + 1;
+                        % obj.gamma_a(t,i,j) = obj.gamma_a(t,i,j) + 1;
+                        % obj.gamma_b(t,i,j) = obj.gamma_b(t,i,j) + 1;
+                        % if (1 == obj.meshSize) || obj.stableW == 0
+                        %     continue;
+                        % end
+                        % if ((i==1)||(i==obj.meshSize))&&((j==1)||(j==obj.meshSize))
+                        %     obj.gamma_a(t,i,j) = obj.gamma_a(t,i,j) + 2 * 3 * obj.stableW;
+                        %     obj.gamma_b(t,i,j) = obj.gamma_b(t,i,j) + 2 * 3 * obj.stableW;
+                        % end
+                        % if ((i==1)||(i==obj.meshSize))&&((j>1)&&(j<obj.meshSize))
+                        %     obj.gamma_a(t,i,j) = obj.gamma_a(t,i,j) + 2 * 5 * obj.stableW;
+                        %     obj.gamma_b(t,i,j) = obj.gamma_b(t,i,j) + 2 * 5 * obj.stableW;
+                        % end
+                        % if ((i>1)&&(i<obj.meshSize))&&((j==1)||(j==obj.meshSize))
+                        %     obj.gamma_a(t,i,j) = obj.gamma_a(t,i,j) + 2 * 5 * obj.stableW;
+                        %     obj.gamma_b(t,i,j) = obj.gamma_b(t,i,j) + 2 * 5 * obj.stableW;
+                        % end
+                        % if ((i>1)&&(i<obj.meshSize))&&((j>1)&&(j<obj.meshSize))
+                        %     obj.gamma_a(t,i,j) = obj.gamma_a(t,i,j) + 2 * 8 * obj.stableW;
+                        %     obj.gamma_b(t,i,j) = obj.gamma_b(t,i,j) + 2 * 8 * obj.stableW;
+                        % end
+                    % end
+                % end
+            % end
         end
 
         function [x,y] = transform(~, xxyy, B)
