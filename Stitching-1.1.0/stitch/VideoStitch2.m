@@ -103,7 +103,7 @@ classdef VideoStitch2 < handle
             obj.quadHeight = obj.videoHeight / obj.meshSize;
             obj.quadWidth = obj.videoWidth / obj.meshSize;
 
-            for frameIndex = 5:obj.nFrames
+            for frameIndex = 1:obj.nFrames
                 pa = squeeze(obj.CP(frameIndex, 1:obj.ppf(frameIndex), 1:2));
                 pb = squeeze(obj.CP(frameIndex, 1:obj.ppf(frameIndex), 3:4));
 
@@ -111,6 +111,21 @@ classdef VideoStitch2 < handle
                 parow = floor(pa(:, 2) / obj.quadHeight) + 1;
                 pbcol = floor(pb(:, 1) / obj.quadWidth) + 1;
                 pbrow = floor(pb(:, 2) / obj.quadHeight) + 1;
+
+                % ra = parow(1:obj.ppf(frameIndex)); ca = pacol(1:obj.ppf(frameIndex));
+                % rb = pbrow(1:obj.ppf(frameIndex)); cb = pbcol(1:obj.ppf(frameIndex));
+
+                % na = obj.nCPgrid(frameIndex, ra, ca, 1) + 1;
+                % na_end = na + obj.ppf(frameIndex);
+                % % obj.nCPgrid(frameIndex, ra, ca, 1) = obj.nCPgrid(frameIndex, ra, ca, 1) + 1;
+                % obj.CPgrid(frameIndex, ra, ca, na:na_end, 1) = 1:obj.ppf(frameIndex);
+                % obj.nCPgrid(frameIndex, ra, ca, 1) = na_end;
+
+                % nb = obj.nCPgrid(frameIndex, rb, cb, 1) + 1;
+                % nb_end = nb + obj.ppf(frameIndex);
+                % % obj.nCPgrid(frameIndex, rb, cb, 2) = obj.nCPgrid(frameIndex, rb, cb, 2) + 1;
+                % obj.CPgrid(frameIndex, rb, cb, nb:nb_end, 2) = 1:obj.ppf(frameIndex);
+                % obj.nCPgrid(frameIndex, rb, cb, 2) = nb_end;
 
                 for CPindex = 1:obj.ppf(frameIndex)
                     ra = parow(CPindex); ca = pacol(CPindex);
@@ -141,7 +156,7 @@ classdef VideoStitch2 < handle
         function [Pa_inv, Pb_inv] = inverse(obj, Pa, Pb)
             Pa_inv = zeros(size(Pa));
             Pb_inv = zeros(size(Pb));
-            for frameIndex = 5:obj.nFrames
+            for frameIndex = 1:obj.nFrames
                 for i = 1:obj.meshSize
                     for j = 1:obj.meshSize
                         Pa_inv(frameIndex, i, j, :, :) = squeeze(Pa(frameIndex, i, j, :, :))^(-1);
@@ -154,7 +169,7 @@ classdef VideoStitch2 < handle
         function [PaCorner, PbCorner] = PxCorner(obj, Pa_inv, Pb_inv)
             PaCorner = ones(obj.nFrames, obj.meshSize, obj.meshSize, 4, 3);
             PbCorner = ones(obj.nFrames, obj.meshSize, obj.meshSize, 4, 3);
-            for frameIndex = 5:obj.nFrames
+            for frameIndex = 1:obj.nFrames
                 for i = 1:obj.meshSize
                     for j = 1:obj.meshSize
                         [PaCorner(frameIndex, i, j, 1, 1), PaCorner(frameIndex, i, j, 1, 2)]...
@@ -181,7 +196,7 @@ classdef VideoStitch2 < handle
         function init(obj)
             obj.Pa = obj.Ca;
             obj.Pb = obj.Cb;
-            for frameIndex = 5:obj.nFrames
+            for frameIndex = 1:obj.nFrames
                 for k = 1:obj.ppf(frameIndex)
                     obj.validCP(frameIndex, k) = 1;
                 end
@@ -195,7 +210,7 @@ classdef VideoStitch2 < handle
         function updateOffset(obj)
             B = zeros(obj.nFrames, 3, 3);
             ms = obj.meshSize;
-            for frameIndex = 5:obj.nFrames
+            for frameIndex = 1:obj.nFrames
                 for row = 1:ms
                     for col = 1:ms
                         B1 = squeeze(obj.Pa(frameIndex, row, col, :, :)) / squeeze(obj.Ca(frameIndex, row, col, :, :));
@@ -334,7 +349,10 @@ classdef VideoStitch2 < handle
                         asaplambda = asap_1;
                     end
                     tic;
-                    parfor frameIndex = 5:obj.nFrames
+                    parfor frameIndex = 1:obj.nFrames
+                        % if obj.ppf(frameIndex) == 0
+                        %        continue;
+                        % end
                         CPcount = 0;
                         PAa = zeros(obj.ppf(frameIndex), 2);
                         PBa = zeros(obj.ppf(frameIndex), 2);
@@ -378,7 +396,7 @@ classdef VideoStitch2 < handle
                     fprintf('.');
                     oPa = obj.Pa;
                     oPb = obj.Pb;
-                    for frameIndex = 5:obj.nFrames
+                    for frameIndex = 1:obj.nFrames
                         stitching = obj.stitchness;
                         % fix the head and tail
                         crop_fix = 0;
@@ -491,7 +509,7 @@ classdef VideoStitch2 < handle
         function updateCP(obj)
             % set validCp and ppf according to H
             obj.ppf = zeros(obj.nFrames, 1);
-            for frameIndex = 5:obj.nFrames
+            for frameIndex = 1:obj.nFrames
                 d = zeros(obj.maxppf, 1);
                 for k = 1:obj.maxppf
                     if obj.validCP(frameIndex, k) == 0
@@ -539,7 +557,7 @@ classdef VideoStitch2 < handle
             fprintf('\nNumber of Valid Control Points :%5d\n', obj.nCP);
             fprintf('\nAverage Alignment Error :%.2f\n', mean(obj.CPthreshold - 10) / 2);
             obj.nCPgrid = zeros(obj.nFrames, obj.meshSize, obj.meshSize, 2);
-            for frameIndex = 5:obj.nFrames
+            for frameIndex = 10:obj.nFrames
                 for k = 1:obj.maxppf
                     if obj.validCP(frameIndex, k) ==1
                         pb = obj.CP(frameIndex, k, 3:4);
@@ -563,7 +581,7 @@ classdef VideoStitch2 < handle
             end
             obj.gap = gap;
             obj.updateOffset();
-            parfor frameIndex = 5 : obj.nFrames %parfor
+            parfor frameIndex = 1 : obj.nFrames %parfor
                 disp(['rendering: # ' int2str(frameIndex)]);
                 fileListA = dir(obj.seqA);
                 fileListA = fileListA(3:length(fileListA));
@@ -603,7 +621,7 @@ classdef VideoStitch2 < handle
             end
             obj.gap = gap;
             obj.updateOffset();
-            parfor frameIndex = 5:obj.nFrames %parfor
+            parfor frameIndex = 1:obj.nFrames %parfor
                 disp(['rendering: # ' int2str(frameIndex)]);
                 fileListA = dir(obj.seqA);
                 fileListA = fileListA(3:length(fileListA));
@@ -668,7 +686,7 @@ classdef VideoStitch2 < handle
                 mkdir(outPathB);
             end
             width = 2;
-            for frameIndex = 5:obj.nFrames %parfor
+            for frameIndex = 1:obj.nFrames %parfor
                 disp(['rendering: # ' int2str(frameIndex)]);
 
                 fileListA = dir(obj.seqA);
@@ -984,10 +1002,10 @@ classdef VideoStitch2 < handle
         function calcOmega(obj)
 %             disp('computing omega...')
             nFrames = obj.nFrames;
-            r_min = 5;
+            r_min = 1;
             meshSize = obj.meshSize;
             I = 2:1:meshSize; J = 2:1:meshSize;
-            for t = 5 : nFrames
+            for t = 1 : nFrames
                 R = t-obj.span:1:t+obj.span;
                 R(R < r_min)=[];
                 R(R > nFrames)=[];%生成所需要的时隙帧

@@ -1,7 +1,7 @@
 function [ homos ] = NewWarping( pa_, pb_, H, W, qH, qW, lambda)
 % A warpped up wersion of as-similar-as-possible warping, with pre-warp. 
 % set PREWARP to false if the output is badly distorted. 
-    PREWARP = true;
+    PREWARP = false;
     nP = length(pa_);
     if length(pb_) ~= nP
         error('Points Numbers met Matching!');
@@ -25,10 +25,11 @@ function [ homos ] = NewWarping( pa_, pb_, H, W, qH, qW, lambda)
     pbWarp(2, :) = pbWarp(2, :) ./ pbWarp(3, :);
     pbWarp = pbWarp(1:2, :)';    
     
-    diff = sum((pa_ - pbWarp) .* (pa_ - pbWarp), 2) < 1000;    
-    valid = pbWarp(:, 1) > 0 & pbWarp(:, 1) < W & pbWarp(:, 2) > 0 & pbWarp(:, 2) < H;
-    pa = pa_(valid & diff, :);
-    pbWarp = pbWarp(valid & diff, :);
+    %diff = sum((pa_ - pbWarp) .* (pa_ - pbWarp), 2) < 1000;    
+    %valid = pbWarp(:, 1) > 0 & pbWarp(:, 1) < W & pbWarp(:, 2) > 0 & pbWarp(:, 2) < H;
+    %pa = pa_(valid & diff, :);
+    %pbWarp = pbWarp(valid & diff, :);
+    %pa = pa_;
     
     asap = AsSimilarAsPossibleWarping(H, W, qW, qH, lambda);
     asap.SetControlPts(pa, pbWarp);
