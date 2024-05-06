@@ -18,8 +18,8 @@ cd ../..;
 
 %% params
 data = '../case-cuhk_lib/';
-input_A = 'left/';
-input_B = 'right/';
+input_A = './process/right_down_back/';
+input_B = './process/back/';
 % ---------------
 PointsPerFrame = 500; % # of feature correspondences in a frame
 TracksPerFrame = 600; % # of trajectories in a frame
@@ -33,7 +33,7 @@ Stitchness = 20;                     % adjust the weight of stitching term, 10 -
 SKIP_BACKGROUND_SEGMENTATION = true; % skip the background segmentation - treat all tracks as background.
 RANSAC = true;                       % use RANSAC to remove wrong sparse correspondences, set to true if overlap is small and stitch fails. 
 % ---------------
-OutputPadding = 1000; % the padding around the video
+OutputPadding = 1500 ; % the padding around the video
 OutputPath = 'res_demo'; % the directory to store the output frames, auto create it if not exist
 
 %% intermediate output control
@@ -113,8 +113,8 @@ else
     load([data 'graph' int2str(TracksPerFrame) '.mat']);
 end
 if PRINT_BACKGROUND
-    PrintBackground([data '/left/'], trackA, backListA, [data '/left_back/']);
-    PrintBackground([data '/right/'], trackB, backListB, [data '/right_back/']);
+    PrintBackground([data input_A], trackA, backListA, [data '/left_back/']);
+    PrintBackground([data input_B], trackB, backListB, [data '/right_back/']);
 end
 disp('Finished Common Background Detection, ');
 toc;
@@ -147,7 +147,7 @@ end
 
 %% Optimize the paths
 tic;
-stitcher = VideoStitch2([data input_A], [data input_B], pathA, pathB, CP, ppf, Smoothness, Cropping, Stitchness);
+stitcher = VideoStitch2([data input_A], [data input_B], pathA, pathB, CP_refine, ppf_refine, Smoothness, Cropping, Stitchness);
 stitcher.init();
 SECOND_ROUND = 5; 
 % use it to perform a 2nd phase optimization for more stable output at non-overlapping region
