@@ -58,6 +58,7 @@ classdef VideoStitch2 < handle
         gamma_b;
 
 
+        invalid_frame;
     end
 
     methods
@@ -102,6 +103,8 @@ classdef VideoStitch2 < handle
             obj.CPthreshold = zeros(obj.nFrames, 1);
             obj.quadHeight = obj.videoHeight / obj.meshSize;
             obj.quadWidth = obj.videoWidth / obj.meshSize;
+
+            obj.invalid_frame = zeros(obj.nFrames);
 
             for frameIndex = 1:obj.nFrames
                 pa = squeeze(obj.CP(frameIndex, 1:obj.ppf(frameIndex), 1:2));
@@ -337,6 +340,8 @@ classdef VideoStitch2 < handle
             boost_non_commmon = 5;
             boost_commmon = 0.1;
 
+            invalid_frame = zeros(obj.nFrames);
+
             for ite = 1:maxIte
                 fprintf('\nRound#%2d ', ite);
                 if ite > 1
@@ -386,17 +391,27 @@ classdef VideoStitch2 < handle
                                 [PAb(CPcount, 1), PAb(CPcount, 2)] = obj.transform(pa, obj.H \ squeeze(Ba(rowa, cola, :, :)));
                             end
                         end
+                        if isempty(PAa) || isempty(PBb)
+                            invalid_frame(frameIndex) = 1;
+                            continue;
+                        end
                         PaStitch(frameIndex, :, :, :, :) = NewWarping(PAa, PBa, obj.videoHeight, obj.videoWidth, obj.quadHeight, obj.quadWidth, asaplambda);
                         PbStitch(frameIndex, :, :, :, :) = NewWarping(PBb, PAb, obj.videoHeight, obj.videoWidth, obj.quadHeight, obj.quadWidth, asaplambda);
                     end
                     toc;
                 end
+                
+                obj.invalid_frame = invalid_frame;
+
                 obj.calcOmega();
                 for inIte = 1:inMaxIte
                     fprintf('.');
                     oPa = obj.Pa;
                     oPb = obj.Pb;
                     for frameIndex = 1:obj.nFrames
+                        if obj.isValidFrame(frameIndex) == 0
+                            continue;
+                        end
                         stitching = obj.stitchness;
                         % fix the head and tail
                         crop_fix = 0;
@@ -510,6 +525,9 @@ classdef VideoStitch2 < handle
             % set validCp and ppf according to H
             obj.ppf = zeros(obj.nFrames, 1);
             for frameIndex = 1:obj.nFrames
+                if obj.isValidFrame(frameIndex) == 0
+                    continue;
+                end
                 d = zeros(obj.maxppf, 1);
                 for k = 1:obj.maxppf
                     if obj.validCP(frameIndex, k) == 0
@@ -557,7 +575,10 @@ classdef VideoStitch2 < handle
             fprintf('\nNumber of Valid Control Points :%5d\n', obj.nCP);
             fprintf('\nAverage Alignment Error :%.2f\n', mean(obj.CPthreshold - 10) / 2);
             obj.nCPgrid = zeros(obj.nFrames, obj.meshSize, obj.meshSize, 2);
-            for frameIndex = 10:obj.nFrames
+            for frameIndex = 1:obj.nFrames
+                if obj.isValidFrame(frameIndex) == 0
+                    continue;
+                end
                 for k = 1:obj.maxppf
                     if obj.validCP(frameIndex, k) ==1
                         pb = obj.CP(frameIndex, k, 3:4);
@@ -582,6 +603,9 @@ classdef VideoStitch2 < handle
             obj.gap = gap;
             obj.updateOffset();
             parfor frameIndex = 1 : obj.nFrames %parfor
+                if (obj.isValidFrame(frameIndex) == 0)
+                    continue;
+                end
                 disp(['rendering: # ' int2str(frameIndex)]);
                 fileListA = dir(obj.seqA);
                 fileListA = fileListA(3:length(fileListA));
@@ -622,6 +646,9 @@ classdef VideoStitch2 < handle
             obj.gap = gap;
             obj.updateOffset();
             parfor frameIndex = 1:obj.nFrames %parfor
+                if (obj.isValidFrame(frameIndex) == 0)
+                    continue;
+                end
                 disp(['rendering: # ' int2str(frameIndex)]);
                 fileListA = dir(obj.seqA);
                 fileListA = fileListA(3:length(fileListA));
@@ -1006,6 +1033,9 @@ classdef VideoStitch2 < handle
             meshSize = obj.meshSize;
             I = 2:1:meshSize; J = 2:1:meshSize;
             for t = 1 : nFrames
+                if obj.isValidFrame(t) == 0
+                    continue;
+                end
                 R = t-obj.span:1:t+obj.span;
                 R(R < r_min)=[];
                 R(R > nFrames)=[];%生成所需要的时隙帧
@@ -1110,7 +1140,13 @@ classdef VideoStitch2 < handle
         end
 
 
-
+        function flag = isValidFrame(obj, frameIndex)
+            if obj.invalid_frame(frameIndex) == 1
+                flag = 0;
+            else
+                flag = 1;
+            end
+        end
     end
 end
 
