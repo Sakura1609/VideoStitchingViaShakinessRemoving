@@ -273,3 +273,6 @@ __pycache__/
 ~case-cuhk_lib/
 case*
 build
+*.avi
+*.mp4
+*.prproj
