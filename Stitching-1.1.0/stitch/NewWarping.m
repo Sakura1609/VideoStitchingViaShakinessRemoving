@@ -29,7 +29,7 @@ function [ homos ] = NewWarping( pa_, pb_, H, W, qH, qW, lambda)
     %valid = pbWarp(:, 1) > 0 & pbWarp(:, 1) < W & pbWarp(:, 2) > 0 & pbWarp(:, 2) < H;
     %pa = pa_(valid & diff, :);
     %pbWarp = pbWarp(valid & diff, :);
-    %pa = pa_;
+    pa = pa_;
     
     asap = AsSimilarAsPossibleWarping(H, W, qW, qH, lambda);
     asap.SetControlPts(pa, pbWarp);
